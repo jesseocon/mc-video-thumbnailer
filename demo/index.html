@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <title>mc-video-thumbnail</title>
+  <link rel="stylesheet" href="index.css">
+  <link rel="stylesheet" href="../dist/main.css">
+
+  <script src="../bower_components/angular/angular.js"></script>
+
+  <script src="bundle.js"></script>
+  <script src="index.js"></script>
+
+</head>
+<body ng-app="demoApp" ng-controller="demoMainController" ng-cloak>
+  <thumbnailer>
+    <video>
+      <source src="./small-mp4.mp4"></source>
+      <p class="awesome">this is {{tooGoodToBeTrue}}</p>
+    </video>
+  </thumbnailer>
+</body>
+</html>
