@@ -2,6 +2,8 @@
 
 thumbnails browser supported videos using canvas
 
+usage forthcoming
+
 ## Installation
 
 ```console
