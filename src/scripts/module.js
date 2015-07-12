@@ -3,8 +3,8 @@
 
   angular
     .module('mcVideoThumbnail', [
-      'mcVideoThumbnail.controllers',
-      'mcVideoThumbnail.mcVideoThumbnail'
+      'mcVideoThumbnailDirective',
+      'mcVideoThumbnailSettings'
     ]);
 
 })(window, window.angular);

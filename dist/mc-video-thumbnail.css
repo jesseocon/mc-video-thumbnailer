@@ -1,0 +1,7 @@
+/**
+ * mc-video-thumbnail v0.1.0 ()
+ * Copyright 2015 Jesse Ocon
+ * Licensed under MIT
+ */
+canvas#mc-thumbnailer-canvas {
+  display: none; }
