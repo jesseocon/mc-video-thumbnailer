@@ -37,7 +37,7 @@ angular.module('yourModule', [mcVideoThumbnail])
         // do something with the img
       }
     }
-  ])
+  ]);
 ```
 
 ## Installation
