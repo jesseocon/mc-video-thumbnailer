@@ -5,26 +5,51 @@
  */
 'use strict';
 
-(function (window, angular, undefined) {
-  'use strict';
+angular.module('mcVideoThumbnailSettings', []).provider('mcVideoThumbnailSettings', function () {
+  var _defaults = {
+    max_thumbnails: 10,
+    thumbnail_interval: 1000
+  },
+      _settings,
+      getSettings = function getSettings() {
+    if (!_settings) {
+      _settings = angular.copy(_defaults);
+    };
 
-  angular.module('mcVideoThumbnail.controllers', []).controller('TestController', ['$scope', function ($scope) {
-    var message = 'Hello world!';
-    $scope.message = message;
-  }]);
-})(window, window.angular);
+    return _settings;
+  };
+
+  this.set = function (prop, value) {
+    var s = getSettings();
+    if (angular.isObject(prop)) {
+      angular.extend(s, prop);
+    } else {
+      s[prop] = value;
+    }
+    return this;
+  };
+
+  this.$get = getSettings;
+
+  return this;
+});
 'use strict';
 
 (function (window, angular, undefined) {
   'use strict';
   // Need to expose an api here to communicate with the video
   // Should have something that passes a video and then returns a dataImageUrl
-  angular.module('mcVideoThumbnail.mcVideoThumbnail', []).directive('testDirective', ['$timeout', function ($timeout) {
+  angular.module('mcVideoThumbnailDirective', []).directive('mcVideoThumbnail', ['$timeout', 'mcVideoThumbnailSettings', function ($timeout, mcVideoThumbnailSettings) {
     return {
       restrict: 'E',
       transclude: true,
-      scope: {},
-      templateUrl: './tpl_thumbnailer.html',
+      scope: {
+        close: '&onClose',
+        onCreatedThumb: '&', // Returns single thumb after each one
+        onCreatedThumbs: '&', // Returns all thumbs at the end
+        stopper: '=stopper'
+      },
+      template: '<canvas id="mc-thumbnailer-canvas"></canvas>' + '<ng-transclude></ng-transclude>',
       link: function link(scope, element) {
         // Locals
         var createScreenshot,
@@ -37,40 +62,53 @@
             stopScreenshot,
             canvas = element.find('canvas')[0],
             video = element.find('video')[0],
-            context = canvas.getContext('2d');
+            sourceEl = element.find('video').find('source')[0],
+            context = canvas.getContext('2d'),
+            max_thumbnails = mcVideoThumbnailSettings.max_thumbnails,
+            thumbnail_interval = mcVideoThumbnailSettings.thumbnail_interval;
+
+        scope.$on('mc.thumbnailer.stop', function (e, args) {
+          stopScreenshot();
+        });
 
         scope.video = element.find('video')[0];
         scope.dummyVideo = undefined;
         scope.thumbs = [];
         scope.intervalID = undefined;
 
-        // What if the height needs to be modified?
-        // We should just pass in the dims
         setCanvasDims = function (vid) {
           canvas.width = vid.videoWidth;
           canvas.height = vid.videoHeight;
         };
 
         createScreenshot = function (vid) {
-          context.drawImage(video, 0, 0, vid.videoWidth, vid.videoHeight);
+          var img;
+          context.drawImage(vid, 0, 0, vid.videoWidth, vid.videoHeight);
+          img = canvas.toDataURL('image/png');
           scope.$apply(function () {
-            scope.thumbs.push({ data: canvas.toDataURL('image/png') });
+            scope.thumbs.push({ data: img });
           });
+          return img;
         };
 
         startScreenshot = function (vid) {
-          var crS = createScreenshot;
+          var thumb,
+              counter = 1;
           scope.intervalID = setInterval(function () {
-            crS(vid);
-          }, 1000);
+            if (counter >= max_thumbnails) {
+              stopScreenshot();
+            }
+            thumb = createScreenshot(vid);
+            scope.onCreatedThumb({ img: thumb }); // Callback to the wrapping directive with the thumb
+            counter++;
+          }, thumbnail_interval);
         };
 
-        stopScreenshot = function (nInt) {
+        stopScreenshot = function () {
           clearInterval(scope.intervalID);
         };
 
         handleDummyVideoLoaded = function () {
-          createScreenshot(scope.dummyVideo);
           startScreenshot(scope.dummyVideo);
         };
 
@@ -81,17 +119,31 @@
         createDummyVideo = function (e) {
           setCanvasDims(e.currentTarget);
 
+          // Add the element to the DOM
           scope.dummyVideo = e.currentTarget.cloneNode(true);
           element.append(scope.dummyVideo);
+          scope.dummyVideo.muted = true;
+          scope.dummyVideo.style.display = 'none';
 
           scope.dummyVideo.addEventListener('loadeddata', handleDummyVideoLoaded);
           scope.dummyVideo.addEventListener('ended', handleDummyVideoEnded);
+
+          scope.dummyVideo.load();
           scope.dummyVideo.play();
         };
 
         scope.init = function () {
           $timeout(function () {
-            video.addEventListener('loadeddata', createDummyVideo);
+            // For some reason chrome will create a pending request
+            // on the second video if the video isn't activated and paused
+            video.addEventListener('loadeddata', function (e) {
+              this.play();
+              this.pause();
+              createDummyVideo(e);
+            });
+            sourceEl.addEventListener('error', function (e) {
+              console.log('there was an error loading the video: ', e);
+            });
             video.addEventListener('error', function () {
               console.log('the video errored out');
             });
@@ -103,11 +155,10 @@
     };
   }]);
 })(window, window.angular);
-"use strict";
 'use strict';
 
 (function (window, angular, undefined) {
   'use strict';
 
-  angular.module('mcVideoThumbnail', ['mcVideoThumbnail.controllers', 'mcVideoThumbnail.mcVideoThumbnail']);
+  angular.module('mcVideoThumbnail', ['mcVideoThumbnailDirective', 'mcVideoThumbnailSettings']);
 })(window, window.angular);
