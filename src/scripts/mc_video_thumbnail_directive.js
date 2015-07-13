@@ -27,6 +27,7 @@
                 handleDummyVideoEnded,
                 startScreenshot,
                 stopScreenshot,
+                removeDummyVideo,
                 canvas = element.find('canvas')[0],
                 video = element.find('video')[0],
                 sourceEl = element.find('video').find('source')[0],
@@ -71,7 +72,13 @@
             };
 
             stopScreenshot = function() {
-              clearInterval(scope.intervalID)
+              clearInterval(scope.intervalID);
+              removeDummyVideo();
+            };
+
+            removeDummyVideo = function() {
+              element[0].removeChild(scope.dummyVideo);
+              scope.dummyVideo = null;
             };
 
             handleDummyVideoLoaded = function() {
